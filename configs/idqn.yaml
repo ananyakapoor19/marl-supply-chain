@@ -1,0 +1,36 @@
+agent_type: idqn
+
+# Training
+total_timesteps: 200000
+quick_timesteps: 5000
+learning_starts: 1000
+eval_freq: 10000
+checkpoint_freq: 50000
+batch_size: 64
+buffer_size: 100000
+gamma: 0.99
+lr: 0.0005
+tau: 0.005
+grad_clip: 10.0
+hidden_sizes: [128, 128]
+eps_start: 1.0
+eps_end: 0.05
+eps_decay_steps: 20000
+device: cpu
+
+# Environment (merged at runtime)
+env:
+  num_agents: 3
+  lead_times: [2, 2, 2]
+  max_order: 20
+  holding_cost: 1.0
+  stockout_cost: 2.0
+  initial_inventory: 10
+  episode_length: 100
+  demand_mode: stationary
+  demand_lambda: 5.0
+  nonstationary_schedule:
+    - step: 0
+      lambda: 5.0
+    - step: 50
+      lambda: 12.0
