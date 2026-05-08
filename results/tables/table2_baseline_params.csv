@@ -1,0 +1,5 @@
+method,demand_mode,parameters,mean_cost
+Base-Stock,stationary,"S=[15, 15, 15]",1380.0
+Base-Stock,nonstationary,"S=[30, 30, 30]",3999.5
+"(s,S) Policy",stationary,"s=[15, 15, 15], S=[20, 20, 20]",1578.5
+"(s,S) Policy",nonstationary,"s=[15, 15, 15], S=[30, 25, 30]",4792.0

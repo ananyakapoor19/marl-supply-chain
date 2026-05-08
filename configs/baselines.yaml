@@ -1,0 +1,5 @@
+n_seeds: 3
+n_episodes: 50
+base_stock_search_levels: [5, 10, 15, 20, 25, 30]
+ss_s_levels: [5, 10, 15]
+ss_S_levels: [10, 15, 20, 25, 30]

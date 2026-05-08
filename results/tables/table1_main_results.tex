@@ -1,0 +1,16 @@
+\begin{table}[ht]
+\centering
+\caption{Main Results: Mean $\pm$ Std across 5 seeds.}
+\label{tab:main_results}
+\begin{tabular}{lcccccc}
+\toprule
+Method & Cost (stat.) & Cost (nonstat.) & Bullwhip (stat.) & Bullwhip (nonstat.) & Stockout (stat.) & Stockout (nonstat.) \\
+\midrule
+Base-Stock & $1388.0 \pm 22.9$ & $4088.8 \pm 17.5$ & $1.020 \pm 0.004$ & $1.118 \pm 0.006$ & $0.426 \pm 0.006$ & $0.393 \pm 0.007$ \\
+(s,S) Policy & $1753.9 \pm 14.7$ & $4785.4 \pm 54.7$ & $3.996 \pm 0.083$ & $4.394 \pm 0.047$ & $0.147 \pm 0.003$ & $0.459 \pm 0.006$ \\
+IDQN & $24927.2 \pm 20719.8$ & $24078.7 \pm 13460.5$ & $2.413 \pm 2.431$ & $0.677 \pm 0.346$ & $0.610 \pm 0.218$ & $0.763 \pm 0.073$ \\
+CDQN & $101392.8 \pm 61315.2$ & $80356.2 \pm 44346.3$ & $3.475 \pm 2.200$ & $1.069 \pm 0.328$ & $0.362 \pm 0.077$ & $0.328 \pm 0.156$ \\
+VDN & $46038.7 \pm 19871.2$ & $21497.1 \pm 8431.6$ & $4.777 \pm 2.251$ & $1.968 \pm 0.574$ & $0.138 \pm 0.102$ & $0.223 \pm 0.090$ \\
+\bottomrule
+\end{tabular}
+\end{table}

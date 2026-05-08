@@ -1,0 +1,44 @@
+{
+  "base_stock_stationary": {
+    "S_levels": [
+      15,
+      15,
+      15
+    ],
+    "mean_cost": 1380.0
+  },
+  "ss_policy_stationary": {
+    "s_levels": [
+      15,
+      15,
+      15
+    ],
+    "S_levels": [
+      20,
+      20,
+      20
+    ],
+    "mean_cost": 1578.5
+  },
+  "base_stock_nonstationary": {
+    "S_levels": [
+      30,
+      30,
+      30
+    ],
+    "mean_cost": 3999.5
+  },
+  "ss_policy_nonstationary": {
+    "s_levels": [
+      15,
+      15,
+      15
+    ],
+    "S_levels": [
+      30,
+      25,
+      30
+    ],
+    "mean_cost": 4792.0
+  }
+}

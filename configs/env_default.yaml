@@ -1,0 +1,15 @@
+num_agents: 3
+lead_times: [2, 2, 2]
+max_order: 20
+holding_cost: 1.0
+stockout_cost: 2.0
+initial_inventory: 10
+episode_length: 100
+demand_mode: stationary
+demand_lambda: 5.0
+nonstationary_schedule:
+  - step: 0
+    lambda: 5.0
+  - step: 50
+    lambda: 12.0
+seed: 42
