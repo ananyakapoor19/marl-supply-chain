@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Generate LaTeX and CSV tables from experiment results."""
 import csv
 import json

@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Generate all report figures from experiment logs."""
 import sys
 from pathlib import Path
