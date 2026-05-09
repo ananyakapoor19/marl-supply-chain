@@ -358,6 +358,42 @@ base-stock and well below $(s,S)$'s $4.38$.
   \label{fig:adaptation}
 \end{figure}
 
+\paragraph{Stockout frequency.}
+Figure~\ref{fig:stockout} shows per-method stockout frequencies.
+$(s,S)$ achieves the lowest stockout rate on stationary demand ($0.15$)
+because batch ordering maintains high inventory positions between reorder
+points. VDN matches this rate ($0.15$) while also achieving far lower
+cost, indicating that it maintains adequate safety stock without excessive
+holding. CDQN's relatively low stockout frequency on non-stationary demand
+($0.26$) suggests it learned a conservative order-large strategy rather
+than a truly adaptive policy.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{fig4_stockout_frequency.pdf}
+  \caption{Stockout frequency (fraction of timesteps with negative
+           inventory) by method and demand setting. Lower is better.}
+  \label{fig:stockout}
+\end{figure}
+
+\paragraph{Inventory trajectories.}
+Figure~\ref{fig:trajectories} shows sample inventory levels over one
+episode per method. Base-stock maintains smooth, near-constant inventory
+at all three nodes. IDQN and VDN show more volatile trajectories but avoid
+prolonged backlog. CDQN exhibits the most erratic behavior, consistent
+with its high cost variance. Upstream amplification is visible in the IDQN
+panel: the supplier's inventory fluctuates far more than the retailer's
+despite identical lead times, illustrating the bullwhip effect in practice.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{fig5_inventory_trajectories.pdf}
+  \caption{Inventory level over time at each node (supplier, warehouse,
+           retailer) for one representative episode per method under
+           stationary demand. Negative values indicate backlog.}
+  \label{fig:trajectories}
+\end{figure}
+
 \paragraph{Non-stationary adaptation.}
 Figure~\ref{fig:adaptation} visualizes the adaptation mechanism directly.
 After step 50, all methods experience a cost spike from the demand jump.
