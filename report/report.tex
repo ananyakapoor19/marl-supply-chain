@@ -19,6 +19,8 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{caption}
+\usepackage{float}       % provides [H] placement specifier
+\usepackage{placeins}    % provides \FloatBarrier
 
 \graphicspath{{../results/figures/}}
 
@@ -221,6 +223,7 @@ steps. We evaluate 5 independent seeds per method, reporting
 mean $\pm$ std over 100 greedy evaluation episodes per seed.
 
 %─────────────────────────────────────────────────────────────────────────────
+\FloatBarrier
 \section{Experiments}
 
 \subsection{Setup}
@@ -237,7 +240,7 @@ workers.
 
 \subsection{Results}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{Main results: mean $\pm$ std over 5 seeds $\times$ 100 episodes.
          Lower cost and bullwhip ratio are better; lower stockout
@@ -263,7 +266,7 @@ CDQN          & $38766 \pm 48126$ & $11425 \pm 2041$ & $5.24 \pm 1.88$ & $1.49 \
 \end{tabular}
 \end{table}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{Tuned classical baseline parameters.}
 \label{tab:baseline_params}
@@ -286,7 +289,7 @@ and significantly lower cost than CDQN throughout training. CDQN's flat or
 rising curve on stationary demand reflects the difficulty of exploring
 $9{,}261$ joint actions in $200{,}000$ steps.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{fig1_training_curves.pdf}
   \caption{Evaluation cost vs.\ training steps for IDQN, CDQN, and VDN.
@@ -295,7 +298,7 @@ $9{,}261$ joint actions in $200{,}000$ steps.
   \label{fig:training}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{fig2_cost_comparison.pdf}
   \caption{Final total cost for all methods under stationary and
@@ -327,7 +330,7 @@ learning, but with extreme variance. In practice, CDQN requires far more
 training steps or a smaller action space to realize its theoretical
 upper-bound potential.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{fig3_bullwhip_ratio.pdf}
   \caption{Bullwhip ratio per node (supplier/warehouse/retailer) for each
@@ -345,7 +348,7 @@ elevated bullwhip on stationary demand due to exploratory ordering during
 training, but VDN achieves $1.69$ on non-stationary demand, the closest to
 base-stock and well below $(s,S)$'s $4.38$.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.85\linewidth]{fig6_nonstationary_adaptation.pdf}
   \caption{Per-step cost over a single non-stationary episode. The
@@ -364,6 +367,7 @@ trend downward after step 60 as the agent's recent experience shifts its
 effective policy, demonstrating the adaptive advantage of RL.
 
 %─────────────────────────────────────────────────────────────────────────────
+\FloatBarrier
 \section{Discussion}
 
 \paragraph{Why VDN outperforms IDQN.}
@@ -392,6 +396,7 @@ occurs once at a known timestep; more complex non-stationarity
 (continuous drift, multiple shifts) remains future work.
 
 %─────────────────────────────────────────────────────────────────────────────
+\FloatBarrier
 \section{Conclusion}
 
 We evaluated three MARL architectures for cooperative inventory management
