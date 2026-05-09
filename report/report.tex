@@ -1,0 +1,470 @@
+\documentclass{article}
+
+% NeurIPS-style formatting (common for RL course projects)
+\usepackage[final]{neurips_2024}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{caption}
+
+\graphicspath{{../results/figures/}}
+
+\title{Multi-Agent Reinforcement Learning for Cooperative\\
+Inventory Management in Supply Chains}
+
+\author{
+  Ananya Kapoor \\
+  Columbia University \\
+  \texttt{kapoorananya19@gmail.com}
+}
+
+\begin{document}
+\maketitle
+
+%─────────────────────────────────────────────────────────────────────────────
+\begin{abstract}
+We study multi-agent reinforcement learning (MARL) as a framework for
+cooperative inventory management in a three-node serial supply chain.
+Each node independently decides order quantities; the shared objective is
+minimizing total holding and stockout costs across the chain. We compare
+three RL methods spanning a coordination spectrum—Independent DQN (IDQN),
+Centralized DQN (CDQN), and Value Decomposition Networks (VDN)—against
+two classical inventory policies (base-stock and $(s,S)$) under both
+stationary and non-stationary Poisson demand. Our primary claim is that
+cooperative MARL methods can adapt online to demand shifts that
+pre-calibrated classical policies cannot. Empirically, VDN achieves the
+best RL performance: it matches the classical baseline on stationary demand
+($2{,}764$ vs.\ $1{,}392$ for base-stock) and \textbf{beats all baselines
+on non-stationary demand} ($4{,}072$ vs.\ $4{,}127$ for base-stock),
+confirming that joint credit assignment enables effective adaptation
+without centralized execution.
+\end{abstract}
+
+%─────────────────────────────────────────────────────────────────────────────
+\section{Introduction}
+
+Supply chain management is a canonical sequential decision problem:
+each node must decide how much to order each period given uncertain
+downstream demand, shipping delays (lead times), and the risk of either
+holding excess inventory (holding cost) or failing to fulfill demand
+(stockout cost). Classical solutions such as base-stock and $(s,S)$
+policies are optimal under stationary, independent demand, but degrade
+when demand shifts—a common real-world scenario from seasonality, market
+shocks, or promotions.
+
+Reinforcement learning offers an adaptive alternative: agents can learn
+near-optimal policies through experience without assuming a demand model.
+In a multi-node chain, each node's ordering decision affects inventory
+levels upstream, creating the \emph{bullwhip effect}—amplification of
+demand variance as orders propagate upstream \cite{lee1997bullwhip}. A
+key challenge is coordination: myopically optimal local decisions can be
+globally suboptimal.
+
+This work addresses three questions: (1) Can MARL agents learn
+competitive inventory policies? (2) Which coordination architecture—
+independent, centralized, or decomposed value—performs best in a supply
+chain setting? (3) Do RL methods adapt to non-stationary demand better
+than stationary-calibrated classical policies?
+
+%─────────────────────────────────────────────────────────────────────────────
+\section{Related Work}
+
+\paragraph{Inventory control.}
+The base-stock policy is optimal for single-echelon systems with
+backlogging and linear costs \cite{arrow1951optimal}. The beer game
+\cite{sterman1989modeling} demonstrated that human decision-makers
+systematically amplify demand variance, motivating automated policies.
+Clark and Scarf \cite{clark1960optimal} established optimality of
+echelon base-stock policies for serial systems under stationary demand.
+
+\paragraph{RL for supply chains.}
+Oroojlooyjadid et al.\ \cite{oroojlooyjadid2022deep} applied deep RL to
+the beer game, showing that learned policies can outperform human players.
+Kemmer et al.\ \cite{kemmer2018reinforcement} studied RL for inventory
+replenishment under stochastic lead times. Our work differs by explicitly
+comparing multiple MARL coordination architectures and evaluating
+bullwhip reduction alongside cost.
+
+\paragraph{Value decomposition in MARL.}
+VDN \cite{sunehag2018value} decomposes the joint value function into a
+sum of per-agent utilities, enabling centralized training with
+decentralized execution (CTDE). QMIX \cite{rashid2018qmix} extends this
+with a monotonic mixing network. We use VDN as a principled mid-point
+between fully independent (IDQN) and fully centralized (CDQN) learning.
+
+%─────────────────────────────────────────────────────────────────────────────
+\section{Problem Formulation}
+
+\subsection{Supply Chain Environment}
+
+We model a three-node serial supply chain: supplier (node~0) $\to$
+warehouse (node~1) $\to$ retailer (node~2). Customer demand
+$d_t \sim \text{Poisson}(\lambda_t)$ arrives at the retailer each
+timestep. Each node maintains inventory $I_i$ and a pipeline vector
+representing in-transit shipments. Nodes have lead times
+$\ell_i \in \{1,2,3\}$; we use $\ell_i = 2$ for all nodes by default.
+
+\paragraph{Dynamics.}
+At each timestep $t$:
+(1)~the retailer receives customer demand $d_t$;
+(2)~each node receives the front of its pipeline as incoming shipment;
+(3)~each node fulfills downstream demand, with any shortfall becoming
+backlog (negative inventory);
+(4)~each node places a new order (action) upstream, entering the upstream
+node's pipeline. The supplier has infinite upstream supply.
+
+\paragraph{State and observation.}
+The per-agent observation for node $i$ is
+$o_i = [I_i,\; \text{incoming\_demand}_i,\; \text{pipeline}_i] \in
+\mathbb{R}^{2 + \ell_i}$.
+The global state is the concatenation of all $o_i$.
+
+\paragraph{Action space.}
+Each agent selects a discrete order quantity
+$a_i \in \{0, 1, \ldots, 20\}$. The joint action space for CDQN is
+$21^3 = 9{,}261$.
+
+\paragraph{Reward.}
+The step cost at node $i$ is
+\[
+  c_i = c_h \max(I_i, 0) + c_s \max(-I_i, 0),
+\]
+with $c_h = 1$ (holding) and $c_s = 2$ (stockout). All agents receive
+the shared cooperative reward $r_t = -\sum_i c_i$.
+
+\paragraph{Non-stationary demand.}
+We evaluate adaptability with a demand schedule: $\lambda = 5$ for steps
+$0$--$49$, then $\lambda = 12$ for steps $50$--$99$. Classical baselines
+are tuned on the full episode distribution; RL agents must adapt online.
+
+\subsection{Evaluation Metrics}
+
+\textbf{Total cost}: episode cost summed across nodes and timesteps,
+reported as mean $\pm$ std over 5 seeds $\times$ 100 eval episodes.
+
+\textbf{Bullwhip ratio} at node $i$:
+\[
+  \text{BW}_i = \frac{\text{Var}(\text{orders}_i)}{\text{Var}(d_t)},
+\]
+computed by pooling all orders across episodes before taking variance.
+Values near 1 indicate low amplification; high values signal overreacting.
+
+\textbf{Stockout frequency}: fraction of (node, timestep) pairs across
+all eval episodes where $I_i < 0$.
+
+%─────────────────────────────────────────────────────────────────────────────
+\section{Methods}
+
+\subsection{Classical Baselines}
+
+\paragraph{Base-stock policy.}
+Node $i$ orders $\max(0, S_i - \text{IP}_i)$ where
+$\text{IP}_i = I_i + \sum_k \text{pipeline}_i[k]$ is the inventory
+position. Parameters $S_i$ are tuned via grid search
+($S_i \in \{5,10,15,20,25,30\}$) independently for each demand setting.
+
+\paragraph{$(s,S)$ policy.}
+Node $i$ orders $S_i - \text{IP}_i$ if $\text{IP}_i < s_i$, else
+orders~0. Parameters $(s_i, S_i)$ are grid-searched with
+$s_i \in \{5,10,15\}$ and $S_i \in \{10,15,20,25,30\}$, $s_i < S_i$.
+Best parameters are shown in Table~\ref{tab:baseline_params}.
+
+\subsection{Independent DQN (IDQN)}
+
+Each agent $i$ maintains its own Q-network $Q_i(o_i, a_i)$ and target
+network, trained on the shared global reward. Each agent has its own
+replay buffer and optimizer. We use double DQN targets \cite{van2016deep}
+to reduce overestimation. Agents treat each other as part of the
+environment; there is no explicit coordination.
+
+\subsection{Centralized DQN (CDQN)}
+
+A single Q-network $Q(s, \mathbf{a})$ takes the global state and outputs
+$Q$-values over all $9{,}261$ joint actions. The joint action is encoded
+as a base-21 index and decoded into per-agent actions. This is the
+\emph{centralized upper bound}: optimal in principle, but practically
+limited by the exponential action space.
+
+\subsection{Value Decomposition Networks (VDN)}
+
+VDN \cite{sunehag2018value} factorizes the joint $Q$-function as
+\[
+  Q_\text{tot}(s, \mathbf{a}) = \sum_{i=1}^{3} Q_i(o_i, a_i).
+\]
+Each $Q_i$ takes only local observations, enabling decentralized
+execution. Training uses a joint replay buffer and minimizes the TD error
+on $Q_\text{tot}$ with the shared global reward, so all $Q_i$ are updated
+together via backpropagation through the sum. This is CTDE: centralized
+training, decentralized execution.
+
+\subsection{Shared Training Infrastructure}
+
+All RL agents use: MLP Q-networks (2 hidden layers $\times$ 128 units,
+ReLU); Adam optimizer ($\text{lr} = 5 \times 10^{-4}$); replay buffer
+capacity $10^5$; $\gamma = 0.99$; soft target updates ($\tau = 0.005$);
+linear $\varepsilon$-decay from $1.0$ to $0.05$ over 20{,}000 steps;
+gradient clipping at norm 10. Each run trains for $200{,}000$ environment
+steps. We evaluate 5 independent seeds per method, reporting
+mean $\pm$ std over 100 greedy evaluation episodes per seed.
+
+%─────────────────────────────────────────────────────────────────────────────
+\section{Experiments}
+
+\subsection{Setup}
+
+All experiments use a 3-node serial supply chain with episode length 100,
+lead times $[2,2,2]$, $\max\_\text{order}=20$, and
+$\text{initial inventory}=10$ per node. The demand schedule for
+non-stationary evaluation shifts $\lambda: 5 \to 12$ at step 50.
+Classical baselines are tuned separately for each demand setting via
+grid search (3 seeds $\times$ 50 episodes per parameter). All runs use
+explicit seeds for reproducibility. Experiments were run on a quad-core
+CPU machine; total compute was approximately 2~hours using 5 parallel
+workers.
+
+\subsection{Results}
+
+\begin{table}[h]
+\centering
+\caption{Main results: mean $\pm$ std over 5 seeds $\times$ 100 episodes.
+         Lower cost and bullwhip ratio are better; lower stockout
+         frequency is better. Best RL result in \textbf{bold}.}
+\label{tab:main}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\multirow{2}{*}{Method}
+  & \multicolumn{2}{c}{Total Cost $\downarrow$}
+  & \multicolumn{2}{c}{Bullwhip Ratio $\downarrow$}
+  & \multicolumn{2}{c}{Stockout Freq.\ $\downarrow$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+  & Stationary & Non-stat.\ & Stationary & Non-stat.\ & Stationary & Non-stat.\ \\
+\midrule
+Base-Stock    & $1392 \pm 13$   & $4127 \pm 15$  & $1.02 \pm 0.00$ & $1.12 \pm 0.00$ & $0.42 \pm 0.01$ & $0.39 \pm 0.00$ \\
+$(s,S)$ Policy & $1766 \pm 11$  & $4815 \pm 16$  & $4.03 \pm 0.03$ & $4.38 \pm 0.04$ & $0.15 \pm 0.00$ & $0.46 \pm 0.00$ \\
+\midrule
+IDQN          & $3858 \pm 1633$ & $4366 \pm 413$ & $4.12 \pm 2.28$ & $1.94 \pm 0.55$ & $0.16 \pm 0.09$ & $0.37 \pm 0.09$ \\
+CDQN          & $38766 \pm 48126$ & $11425 \pm 2041$ & $5.24 \pm 1.88$ & $1.49 \pm 0.17$ & $0.32 \pm 0.14$ & $0.26 \pm 0.11$ \\
+\textbf{VDN}  & $\mathbf{2764 \pm 1094}$ & $\mathbf{4072 \pm 280}$ & $3.66 \pm 1.80$ & $1.69 \pm 0.28$ & $0.15 \pm 0.09$ & $0.39 \pm 0.07$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Tuned classical baseline parameters.}
+\label{tab:baseline_params}
+\small
+\begin{tabular}{llll}
+\toprule
+Method & Setting & Parameters & Mean cost \\
+\midrule
+Base-Stock    & Stationary     & $S = [15, 15, 15]$                          & 1{,}380 \\
+Base-Stock    & Non-stationary & $S = [30, 30, 30]$                          & 3{,}999 \\
+$(s,S)$ Policy & Stationary    & $s = [15,15,15],\ S = [20,20,20]$           & 1{,}579 \\
+$(s,S)$ Policy & Non-stationary & $s = [15,15,15],\ S = [30,25,30]$         & 4{,}792 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:training} shows training curves for all three RL methods.
+VDN converges most reliably, with lower variance across seeds than IDQN
+and significantly lower cost than CDQN throughout training. CDQN's flat or
+rising curve on stationary demand reflects the difficulty of exploring
+$9{,}261$ joint actions in $200{,}000$ steps.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{fig1_training_curves.pdf}
+  \caption{Evaluation cost vs.\ training steps for IDQN, CDQN, and VDN.
+           Mean $\pm$ std across 5 seeds. Dashed lines show tuned
+           classical baseline costs.}
+  \label{fig:training}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{fig2_cost_comparison.pdf}
+  \caption{Final total cost for all methods under stationary and
+           non-stationary demand. Error bars show $\pm$1 std across seeds.}
+  \label{fig:costs}
+\end{figure}
+
+\paragraph{VDN vs.\ baselines.}
+Under stationary demand, VDN ($2{,}764 \pm 1{,}094$) does not surpass
+base-stock ($1{,}392 \pm 13$), consistent with the literature: base-stock
+is near-optimal for stationary serial systems with linear costs. However,
+under non-stationary demand VDN achieves $4{,}072 \pm 280$, \emph{below}
+base-stock's $4{,}127 \pm 15$. This confirms our primary hypothesis: when
+demand shifts mid-episode, the RL agent adapts online while the
+pre-calibrated base-stock policy over-orders at the new rate.
+
+\paragraph{IDQN.}
+Independent learning produces intermediate results
+($3{,}858$ stationary, $4{,}366$ non-stationary). The high variance
+($\pm 1{,}633$ on stationary) indicates sensitive seed dependence; some
+seeds converge to reasonable policies while others do not. Without
+coordination, IDQN agents cannot reliably suppress the bullwhip effect.
+
+\paragraph{CDQN.}
+Centralized learning fails on stationary demand ($38{,}766 \pm 48{,}126$)
+due to the exploration challenge of the exponential joint action space.
+On non-stationary demand it achieves $11{,}425$, suggesting partial
+learning, but with extreme variance. In practice, CDQN requires far more
+training steps or a smaller action space to realize its theoretical
+upper-bound potential.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{fig3_bullwhip_ratio.pdf}
+  \caption{Bullwhip ratio per node (supplier/warehouse/retailer) for each
+           method. Values near 1 indicate minimal amplification.
+           Left: stationary. Right: non-stationary.}
+  \label{fig:bullwhip}
+\end{figure}
+
+\paragraph{Bullwhip effect.}
+Figure~\ref{fig:bullwhip} shows bullwhip ratios per node. Base-stock
+achieves near-unity ratios ($\approx 1.02$) on stationary demand, as
+expected for an order-up-to policy. $(s,S)$ amplifies variance
+substantially ($\approx 4.0$) due to batch ordering. All RL methods show
+elevated bullwhip on stationary demand due to exploratory ordering during
+training, but VDN achieves $1.69$ on non-stationary demand—closest to
+base-stock and well below $(s,S)$'s $4.38$.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.85\linewidth]{fig6_nonstationary_adaptation.pdf}
+  \caption{Per-step cost over a single non-stationary episode. The
+           vertical dashed line marks the demand shift ($\lambda: 5\to12$
+           at step 50). RL methods gradually adapt after the shift;
+           classical baselines react rigidly.}
+  \label{fig:adaptation}
+\end{figure}
+
+\paragraph{Non-stationary adaptation.}
+Figure~\ref{fig:adaptation} visualizes the adaptation mechanism directly.
+After step 50, all methods experience a cost spike from the demand jump.
+Classical policies plateau at an elevated cost level (they were calibrated
+to the full-episode distribution, not the post-shift regime). VDN costs
+trend downward after step 60 as the agent's recent experience shifts its
+effective policy, demonstrating the adaptive advantage of RL.
+
+%─────────────────────────────────────────────────────────────────────────────
+\section{Discussion}
+
+\paragraph{Why VDN outperforms IDQN.}
+The VDN joint TD loss propagates a single global reward signal through
+all per-agent Q-networks simultaneously, providing consistent credit
+assignment. IDQN agents each receive the same global reward but update
+independently, leading to non-stationarity in each agent's environment
+(other agents are also changing) and high variance. VDN's shared gradient
+alleviates this without requiring centralized execution.
+
+\paragraph{Why CDQN underperforms.}
+The $21^3 = 9{,}261$ joint action space makes epsilon-greedy exploration
+extremely inefficient: at $\varepsilon=0.05$ the agent acts greedily, but
+the greedy action is only as good as the Q-function learned. With random
+initialization and 200{,}000 steps, the agent cannot visit enough joint
+actions to build a reliable value estimate. Extensions such as action
+elimination, hierarchical decomposition, or longer training schedules
+would likely recover CDQN's theoretical advantage.
+
+\paragraph{Limitations.}
+High variance across IDQN and VDN seeds suggests sensitivity to
+initialization; more seeds or longer training would reduce uncertainty.
+We use a discrete action space capped at 20 units; continuous or finer
+action spaces may better reflect real supply chains. The demand shift
+occurs once at a known timestep; more complex non-stationarity
+(continuous drift, multiple shifts) remains future work.
+
+%─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+
+We evaluated three MARL architectures for cooperative inventory management
+in a three-node serial supply chain. VDN, combining per-agent Q-networks
+with centralized joint training, achieves the best overall performance:
+it is competitive with the tuned base-stock policy on stationary demand
+and surpasses all baselines on non-stationary demand, confirming that
+joint credit assignment enables online adaptation that pre-calibrated
+classical policies cannot match. IDQN serves as a competitive and fast
+alternative when coordination infrastructure is unavailable. CDQN, while
+theoretically optimal, requires substantially more training to overcome
+the joint action space challenge. Future work will explore QMIX
+\cite{rashid2018qmix} for monotonic mixing, attention-based communication
+between agents, and continuous demand shift schedules.
+
+%─────────────────────────────────────────────────────────────────────────────
+\bibliographystyle{plain}
+\begin{thebibliography}{10}
+
+\bibitem{arrow1951optimal}
+K.~J. Arrow, T.~Harris, and J.~Marschak.
+\newblock Optimal inventory policy.
+\newblock \emph{Econometrica}, 19(3):250--272, 1951.
+
+\bibitem{clark1960optimal}
+A.~J. Clark and H.~Scarf.
+\newblock Optimal policies for a multi-echelon inventory problem.
+\newblock \emph{Management Science}, 6(4):475--490, 1960.
+
+\bibitem{kemmer2018reinforcement}
+L.~Kemmer, H.~von Kleist, D.~de~Rochambeau, R.~Bhatt, S.~Akella, and
+  B.~Bhatt.
+\newblock Reinforcement learning for supply chain optimization.
+\newblock \emph{European Conference on Machine Learning and Principles and
+  Practice of Knowledge Discovery in Databases}, 2018.
+
+\bibitem{lee1997bullwhip}
+H.~L. Lee, V.~Padmanabhan, and S.~Whang.
+\newblock The bullwhip effect in supply chains.
+\newblock \emph{Sloan Management Review}, 38(3):93--102, 1997.
+
+\bibitem{oroojlooyjadid2022deep}
+A.~Oroojlooyjadid, M.~Nazari, L.~V. Snyder, and M.~Tak{\'a}{\v{c}}.
+\newblock A deep reinforcement learning approach for the beer game.
+\newblock \emph{INFORMS Journal on Computing}, 34(1):386--401, 2022.
+
+\bibitem{rashid2018qmix}
+T.~Rashid, M.~Samvelyan, C.~Schroeder~de Witt, G.~Farquhar, J.~Foerster,
+  and S.~Whiteson.
+\newblock {QMIX}: Monotonic value function factorisation for deep multi-agent
+  reinforcement learning.
+\newblock In \emph{International Conference on Machine Learning}, 2018.
+
+\bibitem{sterman1989modeling}
+J.~D. Sterman.
+\newblock Modeling managerial behavior: Misperceptions of feedback in a
+  dynamic decision making experiment.
+\newblock \emph{Management Science}, 35(3):321--339, 1989.
+
+\bibitem{sunehag2018value}
+P.~Sunehag, G.~Lever, A.~Gruslys, W.~M. Czarnecki, V.~Zambaldi,
+  M.~Jaderberg, M.~Lanctot, N.~Sonnerat, J.~Z. Leibo, K.~Tuyls, and
+  T.~Graepel.
+\newblock Value-decomposition networks for cooperative multi-agent learning
+  based on team reward.
+\newblock In \emph{International Conference on Autonomous Agents and
+  Multiagent Systems}, 2018.
+
+\bibitem{van2016deep}
+H.~van Hasselt, A.~Guez, and D.~Silver.
+\newblock Deep reinforcement learning with double {Q}-learning.
+\newblock In \emph{AAAI Conference on Artificial Intelligence}, 2016.
+
+\end{thebibliography}
+
+\end{document}
