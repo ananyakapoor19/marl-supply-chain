@@ -40,8 +40,8 @@ We study multi-agent reinforcement learning (MARL) as a framework for
 cooperative inventory management in a three-node serial supply chain.
 Each node independently decides order quantities; the shared objective is
 minimizing total holding and stockout costs across the chain. We compare
-three RL methods spanning a coordination spectrum—Independent DQN (IDQN),
-Centralized DQN (CDQN), and Value Decomposition Networks (VDN)—against
+three RL methods spanning a coordination spectrum (Independent DQN,
+Centralized DQN, and Value Decomposition Networks) against
 two classical inventory policies (base-stock and $(s,S)$) under both
 stationary and non-stationary Poisson demand. Our primary claim is that
 cooperative MARL methods can adapt online to demand shifts that
@@ -62,20 +62,20 @@ downstream demand, shipping delays (lead times), and the risk of either
 holding excess inventory (holding cost) or failing to fulfill demand
 (stockout cost). Classical solutions such as base-stock and $(s,S)$
 policies are optimal under stationary, independent demand, but degrade
-when demand shifts—a common real-world scenario from seasonality, market
-shocks, or promotions.
+when demand shifts, a common real-world scenario arising from seasonality,
+market shocks, or promotions.
 
 Reinforcement learning offers an adaptive alternative: agents can learn
 near-optimal policies through experience without assuming a demand model.
 In a multi-node chain, each node's ordering decision affects inventory
-levels upstream, creating the \emph{bullwhip effect}—amplification of
-demand variance as orders propagate upstream \cite{lee1997bullwhip}. A
+levels upstream, creating the \emph{bullwhip effect}, the amplification of demand variance
+as orders propagate upstream \cite{lee1997bullwhip}. A
 key challenge is coordination: myopically optimal local decisions can be
 globally suboptimal.
 
 This work addresses three questions: (1) Can MARL agents learn
-competitive inventory policies? (2) Which coordination architecture—
-independent, centralized, or decomposed value—performs best in a supply
+competitive inventory policies? (2) Which coordination architecture
+(independent, centralized, or decomposed value) performs best in a supply
 chain setting? (3) Do RL methods adapt to non-stationary demand better
 than stationary-calibrated classical policies?
 
@@ -342,7 +342,7 @@ achieves near-unity ratios ($\approx 1.02$) on stationary demand, as
 expected for an order-up-to policy. $(s,S)$ amplifies variance
 substantially ($\approx 4.0$) due to batch ordering. All RL methods show
 elevated bullwhip on stationary demand due to exploratory ordering during
-training, but VDN achieves $1.69$ on non-stationary demand—closest to
+training, but VDN achieves $1.69$ on non-stationary demand, the closest to
 base-stock and well below $(s,S)$'s $4.38$.
 
 \begin{figure}[h]
