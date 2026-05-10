@@ -1,7 +1,7 @@
 \documentclass{article}
 
 % NeurIPS-style formatting (common for RL course projects)
-\usepackage[final]{neurips_2024}
+\usepackage[final,nonatbib]{neurips_2024}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -49,10 +49,12 @@ stationary and non-stationary Poisson demand. Our primary claim is that
 cooperative MARL methods can adapt online to demand shifts that
 pre-calibrated classical policies cannot. Empirically, VDN achieves the
 best RL performance: it matches the classical baseline on stationary demand
-($2{,}764$ vs.\ $1{,}392$ for base-stock) and \textbf{beats all baselines
-on non-stationary demand} ($4{,}072$ vs.\ $4{,}127$ for base-stock),
-confirming that joint credit assignment enables effective adaptation
-without centralized execution.
+($2{,}764$ vs.\ $1{,}392$ for base-stock) and achieves the lowest mean cost
+on non-stationary demand ($4{,}072$ vs.\ $4{,}127$ for base-stock),
+suggesting that joint credit assignment enables effective adaptation;
+however, with only 5 seeds the difference is within VDN's inter-seed
+variance and should be interpreted as a directional result rather than
+a statistically conclusive one.
 \end{abstract}
 
 %─────────────────────────────────────────────────────────────────────────────
@@ -275,10 +277,10 @@ CDQN          & $38766 \pm 48126$ & $11425 \pm 2041$ & $5.24 \pm 1.88$ & $1.49 \
 \toprule
 Method & Setting & Parameters & Mean cost \\
 \midrule
-Base-Stock    & Stationary     & $S = [15, 15, 15]$                          & 1{,}380 \\
-Base-Stock    & Non-stationary & $S = [30, 30, 30]$                          & 3{,}999 \\
-$(s,S)$ Policy & Stationary    & $s = [15,15,15],\ S = [20,20,20]$           & 1{,}579 \\
-$(s,S)$ Policy & Non-stationary & $s = [15,15,15],\ S = [30,25,30]$         & 4{,}792 \\
+Base-Stock    & Stationary     & $S = [15, 15, 15]$                          & 1{,}412 \\
+Base-Stock    & Non-stationary & $S = [30, 30, 30]$                          & 4{,}162 \\
+$(s,S)$ Policy & Stationary    & $s = [15,15,15],\ S = [20,20,20]$           & 1{,}765 \\
+$(s,S)$ Policy & Non-stationary & $s = [15,15,15],\ S = [30,25,30]$         & 4{,}858 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -309,11 +311,14 @@ $9{,}261$ joint actions in $200{,}000$ steps.
 \paragraph{VDN vs.\ baselines.}
 Under stationary demand, VDN ($2{,}764 \pm 1{,}094$) does not surpass
 base-stock ($1{,}392 \pm 13$), consistent with the literature: base-stock
-is near-optimal for stationary serial systems with linear costs. However,
-under non-stationary demand VDN achieves $4{,}072 \pm 280$, \emph{below}
-base-stock's $4{,}127 \pm 15$. This confirms our primary hypothesis: when
-demand shifts mid-episode, the RL agent adapts online while the
-pre-calibrated base-stock policy over-orders at the new rate.
+is near-optimal for stationary serial systems with linear costs. Under
+non-stationary demand, VDN achieves $4{,}072 \pm 280$, a lower mean than
+base-stock's $4{,}127 \pm 15$. The 55-unit gap is within VDN's inter-seed
+standard deviation, so we cannot reject the null hypothesis with 5 seeds
+($t \approx 0.44$, $p \approx 0.33$). We report this as a directional
+result consistent with our hypothesis: when demand shifts mid-episode,
+RL agents can adapt online while pre-calibrated policies cannot. A
+larger seed count (e.g., $n=20$) would be needed for a definitive claim.
 
 \paragraph{IDQN.}
 Independent learning produces intermediate results
@@ -351,7 +356,8 @@ base-stock and well below $(s,S)$'s $4.38$.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.85\linewidth]{fig6_nonstationary_adaptation.pdf}
-  \caption{Per-step cost over a single non-stationary episode. The
+  \caption{Per-step cost over a single non-stationary episode (median-cost
+           seed selected per method for representativeness). The
            vertical dashed line marks the demand shift ($\lambda: 5\to12$
            at step 50). RL methods gradually adapt after the shift;
            classical baselines react rigidly.}
@@ -430,6 +436,14 @@ We use a discrete action space capped at 20 units; continuous or finer
 action spaces may better reflect real supply chains. The demand shift
 occurs once at a known timestep; more complex non-stationarity
 (continuous drift, multiple shifts) remains future work.
+Classical baseline parameters were tuned via grid search over
+$\{5,10,15,20,25,30\}$ for base-stock and a smaller grid for $(s,S)$;
+finer grids or Bayesian optimisation may yield stronger classical baselines.
+We define the bullwhip ratio as $\text{Var}(\text{orders}_i)/\text{Var}(d_t)$
+using end-customer demand $d_t$ in the denominator for all nodes; the
+standard echelon-level definition uses each node's immediate downstream
+demand instead, which would give lower absolute values for upstream nodes
+but preserve all relative comparisons reported here.
 
 %─────────────────────────────────────────────────────────────────────────────
 \FloatBarrier

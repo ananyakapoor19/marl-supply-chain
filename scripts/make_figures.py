@@ -201,12 +201,16 @@ def figure2_cost_comparison():
                 means.append(0.0)
                 stds.append(0.0)
 
+        # Clip lower error bar at 0 — episode costs cannot be negative
+        err_lower = [min(s, m) for m, s in zip(means, stds)]
+        err_upper = stds
+
         offset = mode_idx * bar_width
         bars = ax.bar(
             x + offset,
             means,
             bar_width,
-            yerr=stds,
+            yerr=[err_lower, err_upper],
             capsize=4,
             color=[METHOD_COLORS[m] for m in METHODS],
             hatch=mode_styles[mode_idx]["hatch"],
@@ -473,6 +477,11 @@ def _get_one_trajectory(method: str, demand_mode: str, seed: int) -> dict | None
                     params["S_levels"],
                     max_order=env_config.get("max_order", 20),
                 )
+            # For baselines, run multiple episodes and return the median-cost one
+            result = evaluate(agent, dict(env_config), n_episodes=11, seed_offset=seed * 999999 + 1)
+            costs = [sum(t["per_step_costs"]) for t in result["trajectories"]]
+            median_idx = int(np.argsort(costs)[len(costs) // 2])
+            return result["trajectories"][median_idx]
         else:
             import torch
             from src.agents.idqn import IDQNAgent
@@ -496,8 +505,20 @@ def _get_one_trajectory(method: str, demand_mode: str, seed: int) -> dict | None
             agent.load(str(ckpt))
             env_config = config["env"]
 
-        result = evaluate(agent, dict(env_config), n_episodes=1, seed_offset=seed * 999999 + 1)
-        return result["trajectories"][0]
+            # Run multiple episodes across seeds and return the median-cost one
+            all_trajs = []
+            for s in SEEDS:
+                ckpt_s = PROJECT_ROOT / f"results/checkpoints/{method}_{demand_mode}_seed{s}_final.pt"
+                if not ckpt_s.exists():
+                    continue
+                agent.load(str(ckpt_s))
+                r = evaluate(agent, dict(env_config), n_episodes=3, seed_offset=s * 999999 + 1)
+                all_trajs.extend(r["trajectories"])
+            if not all_trajs:
+                return None
+            costs = [sum(t["per_step_costs"]) for t in all_trajs]
+            median_idx = int(np.argsort(costs)[len(costs) // 2])
+            return all_trajs[median_idx]
 
     except Exception as e:
         print(f"  [warn] Could not get trajectory for {method} {demand_mode}: {e}")
