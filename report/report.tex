@@ -19,6 +19,7 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{caption}
+\captionsetup{skip=4pt}
 \usepackage{float}
 \usepackage{placeins}
 
@@ -293,7 +294,7 @@ find good joint actions when there are 9,261 of them.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{fig1_training_curves.pdf}
+  \includegraphics[width=0.78\linewidth]{fig1_training_curves.pdf}
   \caption{Evaluation cost vs.\ training steps for IDQN, CDQN, and VDN.
            Mean $\pm$ std across 5 seeds. Dashed lines show tuned
            classical baseline costs.}
@@ -302,7 +303,7 @@ find good joint actions when there are 9,261 of them.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{fig2_cost_comparison.pdf}
+  \includegraphics[width=0.76\linewidth]{fig2_cost_comparison.pdf}
   \caption{Final total cost for all methods under stationary and
            non-stationary demand. Error bars show $\pm$1 std across seeds.}
   \label{fig:costs}
@@ -339,7 +340,7 @@ space would likely help.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{fig3_bullwhip_ratio.pdf}
+  \includegraphics[width=0.76\linewidth]{fig3_bullwhip_ratio.pdf}
   \caption{Bullwhip ratio per node (supplier/warehouse/retailer) for each
            method. Values near 1 indicate minimal amplification.
            Left: stationary. Right: non-stationary.}
@@ -358,7 +359,7 @@ below $(s,S)$'s $4.38$.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.85\linewidth]{fig6_nonstationary_adaptation.pdf}
+  \includegraphics[width=0.68\linewidth]{fig6_nonstationary_adaptation.pdf}
   \caption{Per-step cost over a single non-stationary episode (median-cost
            seed selected per method). The vertical dashed line marks the
            demand shift ($\lambda: 5 \to 12$ at step 50). RL methods
@@ -378,7 +379,7 @@ than genuine adaptation to the demand level.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{fig4_stockout_frequency.pdf}
+  \includegraphics[width=0.76\linewidth]{fig4_stockout_frequency.pdf}
   \caption{Stockout frequency (fraction of timesteps with negative
            inventory) by method and demand setting. Lower is better.}
   \label{fig:stockout}
@@ -448,7 +449,6 @@ substantially more training to handle its large joint action space.
 
 %─────────────────────────────────────────────────────────────────────────────
 \FloatBarrier
-\newpage
 \appendix
 
 \section{Tuned Baseline Parameters}
@@ -478,7 +478,7 @@ $(s,S)$ Policy & Non-stationary & $s = [15,15,15],\ S = [30,25,30]$ & 4{,}858 \\
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{fig5_inventory_trajectories.pdf}
+  \includegraphics[width=0.72\linewidth]{fig5_inventory_trajectories.pdf}
   \caption{Inventory level over time at each node (supplier, warehouse,
            retailer) for one representative episode per method under
            stationary demand. Negative values indicate backlog.}
