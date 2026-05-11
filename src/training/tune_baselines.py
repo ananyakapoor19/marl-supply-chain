@@ -52,8 +52,8 @@ def tune_base_stock(
                 base_stock_levels=list(combo),
                 max_order=env.max_order,
             )
-            for _ in range(n_episodes):
-                obs_dict, _ = env.reset(seed=seed)
+            for ep in range(n_episodes):
+                obs_dict, _ = env.reset(seed=seed * n_episodes + ep)
                 terminated = truncated = False
                 ep_cost = 0.0
                 while not (terminated or truncated):
@@ -103,8 +103,8 @@ def tune_ss_policy(
                 S_levels=S_vec,
                 max_order=env.max_order,
             )
-            for _ in range(n_episodes):
-                obs_dict, _ = env.reset(seed=seed)
+            for ep in range(n_episodes):
+                obs_dict, _ = env.reset(seed=seed * n_episodes + ep)
                 terminated = truncated = False
                 ep_cost = 0.0
                 while not (terminated or truncated):
