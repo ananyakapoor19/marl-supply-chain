@@ -19,9 +19,28 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{caption}
-\captionsetup{skip=4pt}
 \usepackage{float}
 \usepackage{placeins}
+
+% ── Tighten whitespace ────────────────────────────────────────────────────────
+
+
+% Reduce above/below figure/table float spacing
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 4pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+
+% Tighten caption spacing
+\captionsetup{skip=4pt}
+
+% Tighten section/paragraph spacing
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{8pt plus 2pt minus 1pt}{4pt plus 1pt}
+\titlespacing*{\subsection}{0pt}{6pt plus 2pt minus 1pt}{3pt plus 1pt}
+\titlespacing*{\paragraph}{0pt}{4pt plus 1pt minus 1pt}{0.5em}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
 
 \graphicspath{{../results/figures/}}
 
@@ -31,11 +50,11 @@ Inventory Management in Supply Chains}
 \author{
   Ananya Kapoor \\
   Columbia University \\
-  \texttt{kapoorananya19@gmail.com}
+  \texttt{ak5447}
   \And
   Tanmay Agrawal \\
   Columbia University \\
-  \texttt{ta2832@columbia.edu}
+  \texttt{ta2832}
 }
 
 \begin{document}
@@ -259,7 +278,7 @@ was roughly 2 hours.
 
 \subsection{Results}
 
-\begin{table}[H]
+\begin{table}[t]
 \centering
 \caption{Main results: mean $\pm$ std over 5 seeds $\times$ 100 episodes.
          Lower is better for all metrics. Best RL result shown in bold.}
@@ -292,18 +311,18 @@ than IDQN and much lower cost than CDQN throughout. CDQN's curve stays
 flat or rises on stationary demand, which reflects how hard it is to
 find good joint actions when there are 9,261 of them.
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
-  \includegraphics[width=0.78\linewidth]{fig1_training_curves.pdf}
+  \includegraphics[width=\linewidth]{fig1_training_curves.pdf}
   \caption{Evaluation cost vs.\ training steps for IDQN, CDQN, and VDN.
            Mean $\pm$ std across 5 seeds. Dashed lines show tuned
            classical baseline costs.}
   \label{fig:training}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
-  \includegraphics[width=0.76\linewidth]{fig2_cost_comparison.pdf}
+  \includegraphics[width=\linewidth]{fig2_cost_comparison.pdf}
   \caption{Final total cost for all methods under stationary and
            non-stationary demand. Error bars show $\pm$1 std across seeds.}
   \label{fig:costs}
@@ -338,9 +357,9 @@ which suggests it picks up something useful eventually, but it still
 has much higher cost than VDN. More training steps or a smaller action
 space would likely help.
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
-  \includegraphics[width=0.76\linewidth]{fig3_bullwhip_ratio.pdf}
+  \includegraphics[width=\linewidth]{fig3_bullwhip_ratio.pdf}
   \caption{Bullwhip ratio per node (supplier/warehouse/retailer) for each
            method. Values near 1 indicate minimal amplification.
            Left: stationary. Right: non-stationary.}
@@ -357,9 +376,9 @@ from exploratory orders during training, but VDN reaches $1.69$ on
 non-stationary demand, which is much closer to base-stock and well
 below $(s,S)$'s $4.38$.
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
-  \includegraphics[width=0.68\linewidth]{fig6_nonstationary_adaptation.pdf}
+  \includegraphics[width=0.85\linewidth]{fig6_nonstationary_adaptation.pdf}
   \caption{Per-step cost over a single non-stationary episode (median-cost
            seed selected per method). The vertical dashed line marks the
            demand shift ($\lambda: 5 \to 12$ at step 50). RL methods
@@ -377,9 +396,9 @@ over-ordering. CDQN's low stockout on non-stationary demand ($0.26$)
 likely reflects a learned strategy of ordering large amounts rather
 than genuine adaptation to the demand level.
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
-  \includegraphics[width=0.76\linewidth]{fig4_stockout_frequency.pdf}
+  \includegraphics[width=\linewidth]{fig4_stockout_frequency.pdf}
   \caption{Stockout frequency (fraction of timesteps with negative
            inventory) by method and demand setting. Lower is better.}
   \label{fig:stockout}
@@ -454,7 +473,7 @@ substantially more training to handle its large joint action space.
 \section{Tuned Baseline Parameters}
 \label{app:params}
 
-\begin{table}[H]
+\begin{table}[h]
 \centering
 \caption{Grid-search tuned parameters for classical baselines.
          Each setting evaluated with 3 seeds $\times$ 50 episodes per
@@ -476,9 +495,9 @@ $(s,S)$ Policy & Non-stationary & $s = [15,15,15],\ S = [30,25,30]$ & 4{,}858 \\
 \section{Inventory Trajectory Visualization}
 \label{app:trajectories}
 
-\begin{figure}[H]
+\begin{figure}[h]
   \centering
-  \includegraphics[width=0.72\linewidth]{fig5_inventory_trajectories.pdf}
+  \includegraphics[width=\linewidth]{fig5_inventory_trajectories.pdf}
   \caption{Inventory level over time at each node (supplier, warehouse,
            retailer) for one representative episode per method under
            stationary demand. Negative values indicate backlog.}
@@ -491,20 +510,23 @@ $(s,S)$ Policy & Non-stationary & $s = [15,15,15],\ S = [30,25,30]$ & 4{,}858 \\
 This project was completed by Ananya Kapoor and Tanmay Agrawal with
 roughly equal contributions.
 
-\smallskip
-\noindent\begin{tabular}{p{0.48\linewidth}p{0.48\linewidth}}
-Ananya Kapoor (50\%) & Tanmay Agrawal (50\%) \\[2pt]
-Supply chain environment design and implementation (FIFO pipeline, backlog, Gymnasium interface) &
-CDQN agent: base-21 joint action encoding, centralized Q-network over $21^3$ joint actions \\[4pt]
-IDQN agent: per-agent replay buffers, double DQN targets, $\varepsilon$-decay schedule &
-VDN agent: factorized Q-networks, joint replay buffer, CTDE training loop \\[4pt]
-Classical baselines (base-stock, $(s,S)$) and grid-search tuning pipeline &
-Evaluation metrics (bullwhip ratio, stockout frequency) and full visualization pipeline \\[4pt]
-Experimental evaluation framework: seeding, multi-seed aggregation, reproducibility &
-All training runs, checkpoint management, and statistical analysis \\[4pt]
-Report: Related Work, Problem Formulation, Methods (baselines \& IDQN) &
-Report: Introduction, Methods (CDQN \& VDN), Experiments, Discussion, Conclusion \\
-\end{tabular}
+\paragraph{Ananya Kapoor (50\%)}
+\begin{itemize}
+  \item Supply chain environment design and implementation (FIFO pipeline, backlog, Gymnasium interface)
+  \item IDQN agent: per-agent replay buffers, double DQN targets, $\varepsilon$-decay schedule
+  \item Classical baselines (base-stock, $(s,S)$) and grid-search tuning pipeline
+  \item Experimental evaluation framework: seeding, multi-seed aggregation, reproducibility
+  \item Report: Introduction, Related Work, Problem Formulation, Methods (baselines \& IDQN)
+\end{itemize}
+
+\paragraph{Tanmay Agrawal (50\%)}
+\begin{itemize}
+  \item CDQN agent: base-21 joint action encoding, centralized Q-network over $21^3$ joint actions
+  \item VDN agent: factorized Q-networks, joint replay buffer, CTDE training loop
+  \item Evaluation metrics (bullwhip ratio, stockout frequency) and full visualization pipeline
+  \item All training runs, checkpoint management, and statistical analysis
+  \item Report: Methods (CDQN \& VDN), Experiments, Discussion, Conclusion
+\end{itemize}
 
 %─────────────────────────────────────────────────────────────────────────────
 \bibliographystyle{plain}
